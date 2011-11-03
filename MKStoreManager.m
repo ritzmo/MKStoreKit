@@ -138,22 +138,19 @@ static MKStoreManager* _sharedStoreManager;
 
 + (MKStoreManager*)sharedManager
 {
-	@synchronized(self) {
-		
-        if (_sharedStoreManager == nil) {
-            
+	static dispatch_once_t once;
+	dispatch_once(&once, ^{
 #if TARGET_IPHONE_SIMULATOR
-			NSLog(@"You are running in Simulator MKStoreKit runs only on devices");
+		NSLog(@"You are running in Simulator MKStoreKit runs only on devices");
 #else
-            _sharedStoreManager = [[self alloc] init];					
-			_sharedStoreManager.purchasableObjects = [[NSMutableArray alloc] init];
-			[_sharedStoreManager requestProductData];						
-			_sharedStoreManager.storeObserver = [[MKStoreObserver alloc] init];
-			[[SKPaymentQueue defaultQueue] addTransactionObserver:_sharedStoreManager.storeObserver];            
-            [_sharedStoreManager startVerifyingSubscriptionReceipts];
+		_sharedStoreManager = [[self alloc] init];					
+		_sharedStoreManager.purchasableObjects = [[NSMutableArray alloc] init];
+		[_sharedStoreManager requestProductData];						
+		_sharedStoreManager.storeObserver = [[MKStoreObserver alloc] init];
+		[[SKPaymentQueue defaultQueue] addTransactionObserver:_sharedStoreManager.storeObserver];            
+		[_sharedStoreManager startVerifyingSubscriptionReceipts];
 #endif
-        }
-    }
+	});
     return _sharedStoreManager;
 }
 
