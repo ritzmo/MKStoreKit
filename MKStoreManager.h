@@ -82,4 +82,6 @@
 
 -(void) restoreCompleted;
 -(void) restoreFailedWithError:(NSError*) error;
+
+@property (nonatomic, readonly) NSUInteger purchasableObjectCount;
 @end

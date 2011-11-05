@@ -343,6 +343,11 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
     return priceDict;
 }
 
+- (NSUInteger)purchasableObjectCount
+{
+    return [self.purchasableObjects count];
+}
+
 - (void) buyFeature:(NSString*) featureId
          onComplete:(void (^)(NSString*)) completionBlock         
         onCancelled:(void (^)(void)) cancelBlock
