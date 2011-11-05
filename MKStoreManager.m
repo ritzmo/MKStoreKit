@@ -363,7 +363,9 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
              [alert show];
              
              if(self.onTransactionCompleted)
-                 self.onTransactionCompleted(featureId);                                         
+                 self.onTransactionCompleted(featureId);
+             self.onTransactionCompleted = nil;
+             self.onTransactionCancelled = nil;
          }
          else
          {
@@ -511,6 +513,8 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
                  {
                      NSLog(@"The receipt could not be verified");
                  }
+                 self.onTransactionCompleted = nil;
+                 self.onTransactionCancelled = nil;
              }];            
         }
         else
@@ -518,6 +522,8 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
             [self rememberPurchaseOfProduct:productIdentifier];
             if(self.onTransactionCompleted)
                 self.onTransactionCompleted(productIdentifier);
+            self.onTransactionCompleted = nil;
+            self.onTransactionCancelled = nil;
         }                
     }
 }
@@ -553,6 +559,8 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
     
     if(self.onTransactionCancelled)
         self.onTransactionCancelled();
+    self.onTransactionCompleted = nil;
+    self.onTransactionCancelled = nil;
 }
 
 - (void) failedTransaction: (SKPaymentTransaction *)transaction
@@ -572,6 +580,8 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
     
     if(self.onTransactionCancelled)
         self.onTransactionCancelled();
+    self.onTransactionCompleted = nil;
+    self.onTransactionCancelled = nil;
 }
 
 @end

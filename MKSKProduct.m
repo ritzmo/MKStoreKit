@@ -168,21 +168,15 @@ didReceiveResponse:(NSURLResponse *)response
 	if([responseString isEqualToString:@"YES"])		
 	{
         if(self.onReceiptVerificationSucceeded)
-        {
             self.onReceiptVerificationSucceeded();
-            self.onReceiptVerificationSucceeded = nil;
-        }
 	}
     else
     {
         if(self.onReceiptVerificationFailed)
-        {
             self.onReceiptVerificationFailed(nil);
-            self.onReceiptVerificationFailed = nil;
-        }
     }
-	
-    
+    self.onReceiptVerificationSucceeded = nil;
+    self.onReceiptVerificationFailed = nil;
 }
 
 
@@ -222,20 +216,15 @@ didReceiveResponse:(NSURLResponse *)response
 	if([responseString isEqualToString:@"YES"])		
 	{
         if(onReviewRequestVerificationSucceeded)
-        {
             onReviewRequestVerificationSucceeded();
-            onReviewRequestVerificationFailed = nil;
-        }
 	}
     else
     {
         if(onReviewRequestVerificationFailed)
             onReviewRequestVerificationFailed(nil);
-        
-        onReviewRequestVerificationFailed = nil;
     }
-	
-    
+    onReviewRequestVerificationSucceeded = nil;
+    onReviewRequestVerificationFailed = nil;
 }
 
 + (void)connection:(NSURLConnection *)connection
@@ -244,9 +233,8 @@ didReceiveResponse:(NSURLResponse *)response
     sDataFromConnection = nil;
     
     if(onReviewRequestVerificationFailed)
-    {
-        onReviewRequestVerificationFailed(nil);    
-        onReviewRequestVerificationFailed = nil;
-    }
+        onReviewRequestVerificationFailed(nil);
+    onReviewRequestVerificationSucceeded = nil;
+    onReviewRequestVerificationFailed = nil;
 }
 @end
