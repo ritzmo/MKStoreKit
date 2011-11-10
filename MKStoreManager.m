@@ -287,16 +287,29 @@ static MKStoreManager* _sharedStoreManager;
     return [subscriptionProduct isSubscriptionActive];
 }
 
+// Get a list of available product identifiers, in the same order as
+// the information you retrieve using purchasableObjectsDescription
+- (NSArray*) purchasableObjectsList
+{
+	NSMutableArray *productArray = [[NSMutableArray alloc] initWithCapacity:[self.purchasableObjects count]];
+	for(SKProduct *product in self.purchasableObjects)
+	{
+		[productArray addObject:[product productIdentifier]];
+	}
+	return productArray;
+}
+
 // Call this function to populate your UI
 // this function automatically formats the currency based on the user's locale
 
-- (NSMutableArray*) purchasableObjectsDescription
+- (NSArray*) purchasableObjectsDescription
 {
 	NSMutableArray *productDescriptions = [[NSMutableArray alloc] initWithCapacity:[self.purchasableObjects count]];
-	for(NSUInteger i=0;i<[self.purchasableObjects count];i++)
+#ifndef NDEBUG
+	NSInteger i = 0;
+#endif
+	for(SKProduct *product in self.purchasableObjects)
 	{
-		SKProduct *product = [self.purchasableObjects objectAtIndex:i];
-		
 		NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
 		[numberFormatter setFormatterBehavior:NSNumberFormatterBehavior10_4];
 		[numberFormatter setNumberStyle:NSNumberFormatterCurrencyStyle];
@@ -307,7 +320,7 @@ static MKStoreManager* _sharedStoreManager;
 		NSString *description = [NSString stringWithFormat:@"%@ (%@)",[product localizedTitle], formattedString];
 		
 #ifndef NDEBUG
-		NSLog(@"Product %d - %@", i, description);
+		NSLog(@"Product %d - %@", i++, description);
 #endif
 		[productDescriptions addObject: description];
 	}
@@ -325,11 +338,9 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
 
 */
 - (NSMutableDictionary *)pricesDictionary {
-    NSMutableDictionary *priceDict = [NSMutableDictionary dictionary];
-	for(NSUInteger i=0;i<[self.purchasableObjects count];i++)
+    NSMutableDictionary *priceDict = [NSMutableDictionary dictionaryWithCapacity:[self.purchasableObjects count]];
+	for(SKProduct *product in self.purchasableObjects)
 	{
-		SKProduct *product = [self.purchasableObjects objectAtIndex:i];
-		
 		NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
 		[numberFormatter setFormatterBehavior:NSNumberFormatterBehavior10_4];
 		[numberFormatter setNumberStyle:NSNumberFormatterCurrencyStyle];

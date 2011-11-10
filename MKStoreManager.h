@@ -60,7 +60,8 @@
 + (BOOL) isFeaturePurchased:(NSString*) featureId; 
 //returns a dictionary with all prices for identifiers
 - (NSMutableDictionary *)pricesDictionary;
-- (NSMutableArray*) purchasableObjectsDescription;
+- (NSArray*) purchasableObjectsList;
+- (NSArray*) purchasableObjectsDescription;
 
 // use this method to invoke a purchase
 - (void) buyFeature:(NSString*) featureId
