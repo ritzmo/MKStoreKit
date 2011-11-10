@@ -586,13 +586,18 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
     NSLog(@"Failed transaction: %@", [transaction description]);
     NSLog(@"error: %@", transaction.error);    
 #endif
-	
-    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:[transaction.error localizedFailureReason] 
-													message:[transaction.error localizedRecoverySuggestion]
-												   delegate:self 
-										  cancelButtonTitle:NSLocalizedString(@"Dismiss", @"")
-										  otherButtonTitles: nil];
-	[alert show];
+
+    NSString *title = [transaction.error localizedFailureReason];
+    NSString *message = [transaction.error localizedRecoverySuggestion];
+    if(title || message)
+    {
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:title
+                                                        message:message
+                                                       delegate:self
+                                              cancelButtonTitle:NSLocalizedString(@"Dismiss", @"")
+                                              otherButtonTitles: nil];
+        [alert show];
+    }
     
     if(self.onTransactionCancelled)
         self.onTransactionCancelled();
