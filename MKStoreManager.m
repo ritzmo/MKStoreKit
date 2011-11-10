@@ -589,6 +589,8 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
 
     NSString *title = [transaction.error localizedFailureReason];
     NSString *message = [transaction.error localizedRecoverySuggestion];
+    if(!message && [transaction.error code] != 5001)
+        message = [transaction.error localizedDescription];
     if(title || message)
     {
         UIAlertView *alert = [[UIAlertView alloc] initWithTitle:title
