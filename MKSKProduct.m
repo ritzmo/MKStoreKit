@@ -31,8 +31,8 @@
 
 #import "MKSKProduct.h"
 
-static void (^onReviewRequestVerificationSucceeded)();
-static void (^onReviewRequestVerificationFailed)();
+static void (^onReviewRequestVerificationSucceeded)(NSNumber *);
+static void (^onReviewRequestVerificationFailed)(NSError *);
 static NSURLConnection *sConnection;
 static NSMutableData *sDataFromConnection;
 
@@ -216,7 +216,7 @@ didReceiveResponse:(NSURLResponse *)response
 	if([responseString isEqualToString:@"YES"])		
 	{
         if(onReviewRequestVerificationSucceeded)
-            onReviewRequestVerificationSucceeded();
+            onReviewRequestVerificationSucceeded([NSNumber numberWithBool:YES]);
 	}
     else
     {
