@@ -378,6 +378,9 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
                                                    otherButtonTitles:nil];
              [alert show];
              
+             // NOTE: I'm pretty sure this was missing ;)
+             [self rememberPurchaseOfProduct:featureId];
+
              if(self.onTransactionCompleted)
                  self.onTransactionCompleted(featureId);
              self.onTransactionCompleted = nil;
