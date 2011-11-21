@@ -54,7 +54,7 @@
 
 - (void) requestProductData;
 - (void) startVerifyingSubscriptionReceipts;
--(void) rememberPurchaseOfProduct:(NSString*) productIdentifier;
+-(void) rememberPurchaseOfProduct:(NSString*) productIdentifier withReceipt:(NSData *) receiptData;
 -(void) addToQueue:(NSString*) productId;
 @end
 
@@ -277,8 +277,9 @@ static MKStoreManager* _sharedStoreManager;
 
 // call this function to check if the user has already purchased your feature
 + (BOOL) isFeaturePurchased:(NSString*) featureId
-{    
-    return [[MKStoreManager numberForKey:featureId] boolValue];
+{
+    // NOTE: this just checks if there is any receipt
+    return [MKStoreManager objectForKey:featureId] != nil;
 }
 
 - (BOOL) isSubscriptionActive:(NSString*) featureId
@@ -379,7 +380,7 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
              [alert show];
              
              // NOTE: I'm pretty sure this was missing ;)
-             [self rememberPurchaseOfProduct:featureId];
+             [self rememberPurchaseOfProduct:featureId withReceipt:[@"REVIEW ACCESS" dataUsingEncoding:NSUTF8StringEncoding]];
 
              if(self.onTransactionCompleted)
                  self.onTransactionCompleted(featureId);
@@ -502,7 +503,7 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
              [[NSNotificationCenter defaultCenter] postNotificationName:kSubscriptionsPurchasedNotification 
                                                                  object:productIdentifier];
 
-             [MKStoreManager setObject:receiptData forKey:productIdentifier];             
+             [MKStoreManager setObject:receiptData forKey:productIdentifier];
          }
                                              onError:^(NSError* error)
          {
@@ -520,7 +521,7 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
             
             [thisProduct verifyReceiptOnComplete:^
              {
-                 [self rememberPurchaseOfProduct:productIdentifier];
+                 [self rememberPurchaseOfProduct:productIdentifier withReceipt:receiptData];
              }
                                          onError:^(NSError* error)
              {
@@ -538,7 +539,7 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
         }
         else
         {
-            [self rememberPurchaseOfProduct:productIdentifier];
+            [self rememberPurchaseOfProduct:productIdentifier withReceipt:receiptData];
             if(self.onTransactionCompleted)
                 self.onTransactionCompleted(productIdentifier);
             self.onTransactionCompleted = nil;
@@ -548,11 +549,12 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
 }
 
 
--(void) rememberPurchaseOfProduct:(NSString*) productIdentifier
+-(void) rememberPurchaseOfProduct:(NSString*) productIdentifier withReceipt:(NSData *) receiptData
 {
     NSDictionary *allConsumables = [[self storeKitItems] objectForKey:@"Consumables"];
     if([[allConsumables allKeys] containsObject:productIdentifier])
     {
+        // TODO: we should also add a way to confirm receipts for consumables at a later point
         NSDictionary *thisConsumableDict = [allConsumables objectForKey:productIdentifier];
         int quantityPurchased = [[thisConsumableDict objectForKey:@"Count"] intValue];
         NSString* productPurchased = [thisConsumableDict objectForKey:@"Name"];
@@ -564,7 +566,7 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
     }
     else
     {
-        [MKStoreManager setObject:[NSNumber numberWithBool:YES] forKey:productIdentifier];	
+        [MKStoreManager setObject:receiptData forKey:productIdentifier];
     }
 }
 
