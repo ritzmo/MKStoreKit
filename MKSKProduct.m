@@ -64,6 +64,7 @@ static NSMutableData *sDataFromConnection;
                           onComplete:(void (^)(NSNumber*)) completionBlock
                              onError:(void (^)(NSError*)) errorBlock
 {
+#if defined(REVIEW_ALLOWED)
     if(REVIEW_ALLOWED)
     {
         onReviewRequestVerificationSucceeded = [completionBlock copy];
@@ -108,6 +109,7 @@ static NSMutableData *sDataFromConnection;
         [sConnection start];	
     }
     else
+#endif
     {
         completionBlock([NSNumber numberWithBool:NO]);
     }

@@ -368,6 +368,7 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
     self.onTransactionCancelled = cancelBlock;
 
     dispatch_async(dispatch_get_main_queue(), ^{
+#if defined(REVIEW_ALLOWED)
     [MKSKProduct verifyProductForReviewAccess:featureId
                                    onComplete:^(NSNumber * isAllowed)
      {
@@ -399,6 +400,9 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
          NSLog(@"Review request cannot be checked now: %@", [error description]);
          [self addToQueue:featureId];
      }];
+#else
+         [self addToQueue:featureId];
+#endif
     });
 }
 
