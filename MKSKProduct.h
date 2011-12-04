@@ -31,7 +31,7 @@
 
 
 #import <Foundation/Foundation.h>
-#import "MKStoreKitConfigs.h"
+#import <MKStoreKitConfigs.h>
 
 @interface MKSKProduct : NSObject 
 

@@ -36,7 +36,7 @@
 #import <Foundation/Foundation.h>
 #import <StoreKit/StoreKit.h>
 #import "MKStoreObserver.h"
-#import "MKStoreKitConfigs.h"
+#import <MKStoreKitConfigs.h>
 #import "JSONKit.h"
 
 #define kReceiptStringKey @"MK_STOREKIT_RECEIPTS_STRING"
@@ -60,7 +60,8 @@
 + (BOOL) isFeaturePurchased:(NSString*) featureId; 
 //returns a dictionary with all prices for identifiers
 - (NSMutableDictionary *)pricesDictionary;
-- (NSMutableArray*) purchasableObjectsDescription;
+- (NSArray*) purchasableObjectsList;
+- (NSArray*) purchasableObjectsDescription;
 
 // use this method to invoke a purchase
 - (void) buyFeature:(NSString*) featureId
@@ -82,4 +83,6 @@
 
 -(void) restoreCompleted;
 -(void) restoreFailedWithError:(NSError*) error;
+
+@property (nonatomic, readonly) NSUInteger purchasableObjectCount;
 @end

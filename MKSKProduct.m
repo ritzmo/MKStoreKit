@@ -31,8 +31,8 @@
 
 #import "MKSKProduct.h"
 
-static void (^onReviewRequestVerificationSucceeded)();
-static void (^onReviewRequestVerificationFailed)();
+static void (^onReviewRequestVerificationSucceeded)(NSNumber *);
+static void (^onReviewRequestVerificationFailed)(NSError *);
 static NSURLConnection *sConnection;
 static NSMutableData *sDataFromConnection;
 
@@ -64,6 +64,7 @@ static NSMutableData *sDataFromConnection;
                           onComplete:(void (^)(NSNumber*)) completionBlock
                              onError:(void (^)(NSError*)) errorBlock
 {
+#if defined(REVIEW_ALLOWED)
     if(REVIEW_ALLOWED)
     {
         onReviewRequestVerificationSucceeded = [completionBlock copy];
@@ -107,6 +108,7 @@ static NSMutableData *sDataFromConnection;
         [sConnection start];	
     }
     else
+#endif
     {
         completionBlock([NSNumber numberWithBool:NO]);
     }
@@ -167,21 +169,15 @@ didReceiveResponse:(NSURLResponse *)response
 	if([responseString isEqualToString:@"YES"])		
 	{
         if(self.onReceiptVerificationSucceeded)
-        {
             self.onReceiptVerificationSucceeded();
-            self.onReceiptVerificationSucceeded = nil;
-        }
 	}
     else
     {
         if(self.onReceiptVerificationFailed)
-        {
             self.onReceiptVerificationFailed(nil);
-            self.onReceiptVerificationFailed = nil;
-        }
     }
-	
-    
+    self.onReceiptVerificationSucceeded = nil;
+    self.onReceiptVerificationFailed = nil;
 }
 
 
@@ -221,20 +217,15 @@ didReceiveResponse:(NSURLResponse *)response
 	if([responseString isEqualToString:@"YES"])		
 	{
         if(onReviewRequestVerificationSucceeded)
-        {
-            onReviewRequestVerificationSucceeded();
-            onReviewRequestVerificationFailed = nil;
-        }
+            onReviewRequestVerificationSucceeded([NSNumber numberWithBool:YES]);
 	}
     else
     {
         if(onReviewRequestVerificationFailed)
             onReviewRequestVerificationFailed(nil);
-        
-        onReviewRequestVerificationFailed = nil;
     }
-	
-    
+    onReviewRequestVerificationSucceeded = nil;
+    onReviewRequestVerificationFailed = nil;
 }
 
 + (void)connection:(NSURLConnection *)connection
@@ -243,9 +234,8 @@ didReceiveResponse:(NSURLResponse *)response
     sDataFromConnection = nil;
     
     if(onReviewRequestVerificationFailed)
-    {
-        onReviewRequestVerificationFailed(nil);    
-        onReviewRequestVerificationFailed = nil;
-    }
+        onReviewRequestVerificationFailed(nil);
+    onReviewRequestVerificationSucceeded = nil;
+    onReviewRequestVerificationFailed = nil;
 }
 @end

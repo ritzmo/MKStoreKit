@@ -54,7 +54,7 @@
 
 - (void) requestProductData;
 - (void) startVerifyingSubscriptionReceipts;
--(void) rememberPurchaseOfProduct:(NSString*) productIdentifier;
+-(void) rememberPurchaseOfProduct:(NSString*) productIdentifier withReceipt:(NSData *) receiptData;
 -(void) addToQueue:(NSString*) productId;
 @end
 
@@ -292,7 +292,7 @@ static MKStoreManager* _sharedStoreManager;
 	[self.purchasableObjects addObjectsFromArray:response.products];
 	
 #ifndef NDEBUG	
-	for(int i=0;i<[self.purchasableObjects count];i++)
+	for(NSUInteger i=0;i<[self.purchasableObjects count];i++)
 	{		
 		SKProduct *product = [self.purchasableObjects objectAtIndex:i];
 		NSLog(@"Feature: %@, Cost: %f, ID: %@",[product localizedTitle],
@@ -317,8 +317,9 @@ static MKStoreManager* _sharedStoreManager;
 
 // call this function to check if the user has already purchased your feature
 + (BOOL) isFeaturePurchased:(NSString*) featureId
-{    
-    return [[MKStoreManager numberForKey:featureId] boolValue];
+{
+    // NOTE: this just checks if there is any receipt
+    return [MKStoreManager objectForKey:featureId] != nil;
 }
 
 - (BOOL) isSubscriptionActive:(NSString*) featureId
@@ -327,16 +328,29 @@ static MKStoreManager* _sharedStoreManager;
     return [subscriptionProduct isSubscriptionActive];
 }
 
+// Get a list of available product identifiers, in the same order as
+// the information you retrieve using purchasableObjectsDescription
+- (NSArray*) purchasableObjectsList
+{
+	NSMutableArray *productArray = [[NSMutableArray alloc] initWithCapacity:[self.purchasableObjects count]];
+	for(SKProduct *product in self.purchasableObjects)
+	{
+		[productArray addObject:[product productIdentifier]];
+	}
+	return productArray;
+}
+
 // Call this function to populate your UI
 // this function automatically formats the currency based on the user's locale
 
-- (NSMutableArray*) purchasableObjectsDescription
+- (NSArray*) purchasableObjectsDescription
 {
 	NSMutableArray *productDescriptions = [[NSMutableArray alloc] initWithCapacity:[self.purchasableObjects count]];
-	for(int i=0;i<[self.purchasableObjects count];i++)
+#ifndef NDEBUG
+	NSInteger i = 0;
+#endif
+	for(SKProduct *product in self.purchasableObjects)
 	{
-		SKProduct *product = [self.purchasableObjects objectAtIndex:i];
-		
 		NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
 		[numberFormatter setFormatterBehavior:NSNumberFormatterBehavior10_4];
 		[numberFormatter setNumberStyle:NSNumberFormatterCurrencyStyle];
@@ -347,7 +361,7 @@ static MKStoreManager* _sharedStoreManager;
 		NSString *description = [NSString stringWithFormat:@"%@ (%@)",[product localizedTitle], formattedString];
 		
 #ifndef NDEBUG
-		NSLog(@"Product %d - %@", i, description);
+		NSLog(@"Product %d - %@", i++, description);
 #endif
 		[productDescriptions addObject: description];
 	}
@@ -365,11 +379,9 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
 
 */
 - (NSMutableDictionary *)pricesDictionary {
-    NSMutableDictionary *priceDict = [NSMutableDictionary dictionary];
-	for(int i=0;i<[self.purchasableObjects count];i++)
+    NSMutableDictionary *priceDict = [NSMutableDictionary dictionaryWithCapacity:[self.purchasableObjects count]];
+	for(SKProduct *product in self.purchasableObjects)
 	{
-		SKProduct *product = [self.purchasableObjects objectAtIndex:i];
-		
 		NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
 		[numberFormatter setFormatterBehavior:NSNumberFormatterBehavior10_4];
 		[numberFormatter setNumberStyle:NSNumberFormatterCurrencyStyle];
@@ -383,14 +395,21 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
     return priceDict;
 }
 
+- (NSUInteger)purchasableObjectCount
+{
+    return [self.purchasableObjects count];
+}
+
 - (void) buyFeature:(NSString*) featureId
          onComplete:(void (^)(NSString*)) completionBlock         
         onCancelled:(void (^)(void)) cancelBlock
 {
     self.onTransactionCompleted = completionBlock;
     self.onTransactionCancelled = cancelBlock;
-    
-    [MKSKProduct verifyProductForReviewAccess:featureId                                                              
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+#if defined(REVIEW_ALLOWED)
+    [MKSKProduct verifyProductForReviewAccess:featureId
                                    onComplete:^(NSNumber * isAllowed)
      {
          if([isAllowed boolValue])
@@ -402,8 +421,13 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
                                                    otherButtonTitles:nil];
              [alert show];
              
+             // NOTE: I'm pretty sure this was missing ;)
+             [self rememberPurchaseOfProduct:featureId withReceipt:[@"REVIEW ACCESS" dataUsingEncoding:NSUTF8StringEncoding]];
+
              if(self.onTransactionCompleted)
-                 self.onTransactionCompleted(featureId);                                         
+                 self.onTransactionCompleted(featureId);
+             self.onTransactionCompleted = nil;
+             self.onTransactionCancelled = nil;
          }
          else
          {
@@ -415,7 +439,11 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
      {
          NSLog(@"Review request cannot be checked now: %@", [error description]);
          [self addToQueue:featureId];
-     }];    
+     }];
+#else
+         [self addToQueue:featureId];
+#endif
+    });
 }
 
 -(void) addToQueue:(NSString*) productId
@@ -521,7 +549,7 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
              [[NSNotificationCenter defaultCenter] postNotificationName:kSubscriptionsPurchasedNotification 
                                                                  object:productIdentifier];
 
-             [MKStoreManager setObject:receiptData forKey:productIdentifier];             
+             [MKStoreManager setObject:receiptData forKey:productIdentifier];
          }
                                              onError:^(NSError* error)
          {
@@ -539,7 +567,7 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
             
             [thisProduct verifyReceiptOnComplete:^
              {
-                 [self rememberPurchaseOfProduct:productIdentifier];
+                 [self rememberPurchaseOfProduct:productIdentifier withReceipt:receiptData];
              }
                                          onError:^(NSError* error)
              {
@@ -551,23 +579,28 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
                  {
                      NSLog(@"The receipt could not be verified");
                  }
+                 self.onTransactionCompleted = nil;
+                 self.onTransactionCancelled = nil;
              }];            
         }
         else
         {
-            [self rememberPurchaseOfProduct:productIdentifier];
+            [self rememberPurchaseOfProduct:productIdentifier withReceipt:receiptData];
             if(self.onTransactionCompleted)
                 self.onTransactionCompleted(productIdentifier);
+            self.onTransactionCompleted = nil;
+            self.onTransactionCancelled = nil;
         }                
     }
 }
 
 
--(void) rememberPurchaseOfProduct:(NSString*) productIdentifier
+-(void) rememberPurchaseOfProduct:(NSString*) productIdentifier withReceipt:(NSData *) receiptData
 {
     NSDictionary *allConsumables = [[self storeKitItems] objectForKey:@"Consumables"];
     if([[allConsumables allKeys] containsObject:productIdentifier])
     {
+        // TODO: we should also add a way to confirm receipts for consumables at a later point
         NSDictionary *thisConsumableDict = [allConsumables objectForKey:productIdentifier];
         int quantityPurchased = [[thisConsumableDict objectForKey:@"Count"] intValue];
         NSString* productPurchased = [thisConsumableDict objectForKey:@"Name"];
@@ -579,7 +612,7 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
     }
     else
     {
-        [MKStoreManager setObject:[NSNumber numberWithBool:YES] forKey:productIdentifier];	
+        [MKStoreManager setObject:receiptData forKey:productIdentifier];
     }
 }
 
@@ -593,6 +626,8 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
     
     if(self.onTransactionCancelled)
         self.onTransactionCancelled();
+    self.onTransactionCompleted = nil;
+    self.onTransactionCancelled = nil;
 }
 
 - (void) failedTransaction: (SKPaymentTransaction *)transaction
@@ -602,16 +637,25 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
     NSLog(@"Failed transaction: %@", [transaction description]);
     NSLog(@"error: %@", transaction.error);    
 #endif
-	
-    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:[transaction.error localizedFailureReason] 
-													message:[transaction.error localizedRecoverySuggestion]
-												   delegate:self 
-										  cancelButtonTitle:NSLocalizedString(@"Dismiss", @"")
-										  otherButtonTitles: nil];
-	[alert show];
+
+    NSString *title = [transaction.error localizedFailureReason];
+    NSString *message = [transaction.error localizedRecoverySuggestion];
+    if(!message && [transaction.error code] != 5001)
+        message = [transaction.error localizedDescription];
+    if(title || message)
+    {
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:title
+                                                        message:message
+                                                       delegate:self
+                                              cancelButtonTitle:NSLocalizedString(@"Dismiss", @"")
+                                              otherButtonTitles: nil];
+        [alert show];
+    }
     
     if(self.onTransactionCancelled)
         self.onTransactionCancelled();
+    self.onTransactionCompleted = nil;
+    self.onTransactionCancelled = nil;
 }
 
 @end
