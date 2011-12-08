@@ -30,6 +30,7 @@
 //	4) A paypal donation to mugunth.kumar@gmail.com
 
 #import "MKSKProduct.h"
+#import "NSData+Base64.h"
 
 static void (^onReviewRequestVerificationSucceeded)(NSNumber *);
 static void (^onReviewRequestVerificationFailed)(NSError *);
@@ -129,10 +130,7 @@ static NSMutableData *sDataFromConnection;
 	[theRequest setHTTPMethod:@"POST"];		
 	[theRequest setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
 	
-	NSString *receiptDataString = [[NSString alloc] initWithData:self.receipt 
-                                                        encoding:NSASCIIStringEncoding];
-    
-	NSString *postData = [NSString stringWithFormat:@"receiptdata=%@", receiptDataString];
+	NSString *postData = [NSString stringWithFormat:@"receiptdata=%@", [self.receipt base64EncodedString]];
 	
 	NSString *length = [NSString stringWithFormat:@"%d", [postData length]];	
 	[theRequest setValue:length forHTTPHeaderField:@"Content-Length"];	
