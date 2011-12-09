@@ -573,7 +573,7 @@ NSString *upgradePrice = [prices objectForKey:@"com.mycompany.upgrade"]
              {
                  if(self.onTransactionCancelled)
                  {
-                     self.onTransactionCancelled(productIdentifier);
+                     self.onTransactionCancelled();
                  }
                  else
                  {
